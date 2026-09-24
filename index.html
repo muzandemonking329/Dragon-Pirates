@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragon Pirates</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #07111f;
+        color: white;
+        overflow-x: hidden;
+    }
+
+    #game {
+        min-height: 100vh;
+        position: relative;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 50% 20%, #17466b 0%, transparent 35%),
+            linear-gradient(#07182a, #03101c);
+    }
+
+    .screen {
+        min-height: 100vh;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 25px;
+    }
+
+    .screen.active {
+        display: flex;
+    }
+
+    .menu {
+        text-align: center;
+        max-width: 700px;
+    }
+
+    h1 {
+        font-size: clamp(48px, 10vw, 100px);
+        margin: 0;
+        color: #f5c542;
+        text-shadow: 4px 4px #17202b;
+    }
+
+    h2 {
+        color: #7ddcff;
+    }
+
+    .subtitle {
+        font-size: 22px;
+        margin: 10px 0 35px;
+        color: #c9e9ff;
+    }
+
+    button {
+        border: 2px solid #f5c542;
+        background: #102c43;
+        color: white;
+        padding: 14px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        cursor: pointer;
+        margin: 6px;
+        transition: .15s;
+    }
+
+    button:hover {
+        background: #f5c542;
+        color: #07111f;
+        transform: translateY(-2px);
+    }
+
+    .game-layout {
+        width: min(1100px, 100%);
+        margin: auto;
+    }
+
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        padding: 15px;
+        background: rgba(4, 16, 28, .9);
+        border-bottom: 2px solid #245273;
+    }
+
+    .stat {
+        background: #102c43;
+        padding: 10px 15px;
+        border-radius: 10px;
+    }
+
+    .world {
+        position: relative;
+        height: 500px;
+        margin: 20px 0;
+        border: 3px solid #245273;
+        border-radius: 20px;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 20% 25%, #d9f3ff 0 5px, transparent 6px),
+            radial-gradient(circle at 80% 40%, #d9f3ff 0 4px, transparent 5px),
+            linear-gradient(#2588ad 0 55%, #11617b 55% 100%);
+    }
+
+    .island {
+        position: absolute;
+        width: 240px;
+        height: 120px;
+        border-radius: 50%;
+        background: #d6a84f;
+        box-shadow: inset 0 -20px #9a7130;
+    }
+
+    .island::before {
+        content: "🌴";
+        position: absolute;
+        font-size: 50px;
+        left: 75px;
+        top: -35px;
+    }
+
+    .island.one {
+        left: 8%;
+        top: 15%;
+    }
+
+    .island.two {
+        right: 8%;
+        bottom: 12%;
+    }
+
+    .island.three {
+        left: 38%;
+        top: 60%;
+        width: 180px;
+        height: 90px;
+    }
+
+    .ship {
+        position: absolute;
+        left: 45%;
+        top: 40%;
+        font-size: 70px;
+        transition: .15s;
+        user-select: none;
+    }
+
+    .dragon {
+        position: absolute;
+        font-size: 55px;
+        right: 15%;
+        top: 18%;
+        cursor: pointer;
+        user-select: none;
+        animation: fly 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes fly {
+        from { transform: translateY(0) rotate(-4deg); }
+        to { transform: translateY(-12px) rotate(4deg); }
+    }
+
+    .controls {
+        text-align: center;
+        margin: 15px 0;
+    }
+
+    .controls button {
+        min-width: 65px;
+        font-size: 25px;
+    }
+
+    .panel {
+        background: rgba(8, 23, 38, .94);
+        border: 2px solid #245273;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 15px;
+    }
+
+    #message {
+        min-height: 50px;
+        color: #d8f4ff;
+        line-height: 1.5;
+    }
+
+    .health {
+        width: 180px;
+        height: 18px;
+        background: #29151a;
+        border-radius: 20px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+    }
+
+    #healthBar {
+        height: 100%;
+        width: 100%;
+        background: #e04b4b;
+        transition: width .2s;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .dragon-card {
+        background: #102c43;
+        padding: 18px;
+        border-radius: 14px;
+        margin: 10px;
+        cursor: pointer;
+    }
+
+    .dragon-card:hover {
+        border: 2px solid #f5c542;
+    }
+
+    .dragon-options {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    #battleScreen {
+        text-align: center;
+    }
+
+    .battle-dragon {
+        font-size: 110px;
+        animation: battleFloat 1.2s infinite alternate;
+    }
+
+    @keyframes battleFloat {
+        to { transform: translateY(-15px); }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <!-- TITLE SCREEN -->
+    <section id="titleScreen" class="screen active">
+        <div class="menu">
+            <h1>DRAGON<br>PIRATES</h1>
+            <p class="subtitle">
+                Sail the seas. Find dragons. Become a legend.
+            </p>
+
+            <button id="startButton">⚓ Start Adventure</button>
+        </div>
+    </section>
+
+    <!-- DRAGON SELECTION -->
+    <section id="dragonScreen" class="screen">
+        <div class="menu">
+            <h2>🐉 Choose Your First Dragon</h2>
+            <p>Your dragon will become your closest companion.</p>
+
+            <div class="dragon-options">
+
+                <div class="dragon-card" data-dragon="Ember">
+                    <div style="font-size:70px;">🐲</div>
+                    <h3>Ember</h3>
+                    <p>🔥 Fire Dragon</p>
+                    <p>Power: 8 | Speed: 5</p>
+                </div>
+
+                <div class="dragon-card" data-dragon="Gale">
+                    <div style="font-size:70px;">🐉</div>
+                    <h3>Gale</h3>
+                    <p>🌪️ Wind Dragon</p>
+                    <p>Power: 5 | Speed: 9</p>
+                </div>
+
+                <div class="dragon-card" data-dragon="Tide">
+                    <div style="font-size:70px;">🐳</div>
+                    <h3>Tide</h3>
+                    <p>🌊 Water Dragon</p>
+                    <p>Power: 7 | Speed: 7</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN GAME -->
+    <section id="gameScreen" class="screen">
+        <div class="game-layout">
+
+            <div class="topbar">
+                <div class="stat">🏴‍☠️ Captain: <b id="captainName">Player</b></div>
+                <div class="stat">🐉 Dragon: <b id="dragonName">---</b></div>
+                <div class="stat">⭐ Rank: <b id="dragonRank">10</b></div>
+                <div class="stat">
+                    ❤️
+                    <span class="health">
+                        <span id="healthBar"></span>
+                    </span>
+                </div>
+                <div class="stat">💰 <b id="gold">100</b></div>
+            </div>
+
+            <div class="world" id="world">
+
+                <div class="island one"></div>
+                <div class="island two"></div>
+                <div class="island three"></div>
+
+                <div class="ship" id="ship">⛵</div>
+
+                <div class="dragon" id="worldDragon" title="Your dragon">
+                    🐉
+                </div>
+
+            </div>
+
+            <div class="controls">
+                <button id="up">⬆️</button><br>
+                <button id="left">⬅️</button>
+                <button id="down">⬇️</button>
+                <button id="right">➡️</button>
+            </div>
+
+            <div class="panel">
+                <h2>📜 Captain's Log</h2>
+                <div id="message">
+                    Welcome aboard, Captain. Find the hidden island.
+                </div>
+
+                <button id="exploreButton">🔎 Explore</button>
+                <button id="battleButton">⚔️ Battle</button>
+                <button id="treasureButton">💰 Search for Treasure</button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- BATTLE SCREEN -->
+    <section id="battleScreen" class="screen">
+        <div class="menu">
+
+            <h2>⚔️ DRAGON BATTLE</h2>
+
+            <div class="battle-dragon" id="enemyDragon">🐲</div>
+
+            <h3 id="enemyName">Wild Dragon</h3>
+
+            <p>
+                Enemy HP:
+                <span class="health">
+                    <span id="enemyHealthBar" style="background:#8f62e8;width:100%;display:block;"></span>
+                </span>
+            </p>
+
+            <div class="panel">
+                <button id="attackButton">🔥 Dragon Attack</button>
+                <button id="specialButton">⚡ Special Attack</button>
+                <button id="runButton">🏃 Escape</button>
+
+                <p id="battleMessage"></p>
+            </div>
+
+        </div>
+    </section>
+
+</div>
+
+<script>
+const state = {
+    dragon: null,
+    dragonPower: 5,
+    dragonSpeed: 5,
+    health: 100,
+    gold: 100,
+    rank: 10,
+    shipX: 45,
+    shipY: 40,
+    enemyHealth: 100,
+    specialReady: true
+};
+
+const screens = {
+    title: document.getElementById("titleScreen"),
+    dragon: document.getElementById("dragonScreen"),
+    game: document.getElementById("gameScreen"),
+    battle: document.getElementById("battleScreen")
+};
+
+function showScreen(screen) {
+    Object.values(screens).forEach(s => s.classList.remove("active"));
+    screen.classList.add("active");
+}
+
+function updateHealth() {
+    const value = Math.max(0, Math.min(100, state.health));
+    document.getElementById("healthBar").style.width = value + "%";
+}
+
+function updateShip() {
+    const ship = document.getElementById("ship");
+
+    state.shipX = Math.max(2, Math.min(90, state.shipX));
+    state.shipY = Math.max(5, Math.min(80, state.shipY));
+
+    ship.style.left = state.shipX + "%";
+    ship.style.top = state.shipY + "%";
+}
+
+function moveShip(dx, dy) {
+    state.shipX += dx;
+    state.shipY += dy;
+    updateShip();
+
+    if (Math.random() < 0.15) {
+        logMessage("🌊 The sea grows rough around your ship...");
+    }
+}
+
+function logMessage(text) {
+    document.getElementById("message").textContent = text;
+}
+
+function chooseDragon(name) {
+    state.dragon = name;
+
+    if (name === "Ember") {
+        state.dragonPower = 8;
+        state.dragonSpeed = 5;
+    }
+
+    if (name === "Gale") {
+        state.dragonPower = 5;
+        state.dragonSpeed = 9;
+    }
+
+    if (name === "Tide") {
+        state.dragonPower = 7;
+        state.dragonSpeed = 7;
+    }
+
+    document.getElementById("dragonName").textContent = name;
+
+    logMessage(
+        `🐉 ${name} has chosen you as its captain. ` +
+        `Your journey begins at Stormbreak Island.`
+    );
+
+    showScreen(screens.game);
+}
+
+function explore() {
+    const events = [
+        "You discover an abandoned pirate camp.",
+        "🐚 Your dragon finds a strange seashell that glows blue.",
+        "You discover an old map marked with a dragon symbol.",
+        "🌊 A giant wave crashes against your ship!",
+        "🐉 Your dragon senses another dragon nearby.",
+        "You find footprints leading toward a hidden cave."
+    ];
+
+    logMessage(events[Math.floor(Math.random() * events.length)]);
+
+    if (Math.random() < 0.35) {
+        state.gold += 25;
+        document.getElementById("gold").textContent = state.gold;
+        logMessage("💰 You found 25 gold!");
+    }
+}
+
+function treasure() {
+    const roll = Math.random();
+
+    if (roll < 0.25) {
+        state.gold += 100;
+        logMessage("💎 LEGENDARY TREASURE! You found 100 gold.");
+    } else if (roll < 0.65) {
+        state.gold += 40;
+        logMessage("💰 You found 40 gold.");
+    } else {
+        logMessage("🦀 A crab stole your treasure map!");
+    }
+
+    document.getElementById("gold").textContent = state.gold;
+}
+
+function startBattle() {
+    state.enemyHealth = 100;
+    state.specialReady = true;
+
+    document.getElementById("enemyHealthBar").style.width = "100%";
+    document.getElementById("battleMessage").textContent =
+        "A wild dragon blocks your path!";
+
+    showScreen(screens.battle);
+}
+
+function enemyAttack() {
+    const damage = Math.floor(Math.random() * 12) + 5;
+    state.health -= damage;
+
+    updateHealth();
+
+    document.getElementById("battleMessage").textContent =
+        `💥 The enemy dragon attacks for ${damage} damage!`;
+
+    if (state.health <= 0) {
+        state.health = 100;
+        updateHealth();
+
+        document.getElementById("battleMessage").textContent =
+            "Your dragon carries you back to your ship. You survived!";
+    }
+}
+
+function attack() {
+    const damage =
+        Math.floor(Math.random() * 10) +
+        state.dragonPower;
+
+    state.enemyHealth -= damage;
+    state.enemyHealth = Math.max(0, state.enemyHealth);
+
+    document.getElementById("enemyHealthBar").style.width =
+        state.enemyHealth + "%";
+
+    if (state.enemyHealth <= 0) {
+        winBattle();
+        return;
+    }
+
+    document.getElementById("battleMessage").textContent =
+        `🐉 Your dragon deals ${damage} damage!`;
+
+    setTimeout(enemyAttack, 500);
+}
+
+function specialAttack() {
+    if (!state.specialReady) {
+        document.getElementById("battleMessage").textContent =
+            "⚠️ Your special attack isn't ready!";
+        return;
+    }
+
+    state.specialReady = false;
+
+    const damage = state.dragonPower * 3;
+
+    state.enemyHealth -= damage;
+    state.enemyHealth = Math.max(0, state.enemyHealth);
+
+    document.getElementById("enemyHealthBar").style.width =
+        state.enemyHealth + "%";
+
+    if (state.enemyHealth <= 0) {
+        winBattle();
+        return;
+    }
+
+    document.getElementById("battleMessage").textContent =
+        `⚡ SPECIAL ATTACK! ${damage} damage!`;
+
+    setTimeout(enemyAttack, 600);
+}
+
+function winBattle() {
+    state.gold += 75;
+
+    if (state.rank > 1) {
+        state.rank--;
+    }
+
+    document.getElementById("gold").textContent = state.gold;
+    document.getElementById("dragonRank").textContent = state.rank;
+
+    document.getElementById("battleMessage").textContent =
+        `🏆 VICTORY! Your dragon defeated the enemy! ` +
+        `Dragon Rank increased to ${state.rank}.`;
+
+    setTimeout(() => {
+        showScreen(screens.game);
+        logMessage(
+            `🏆 Victory! Your dragon is now Rank ${state.rank}. ` +
+            `You earned 75 gold.`
+        );
+    }, 1300);
+}
+
+document.getElementById("startButton")
+    .addEventListener("click", () => showScreen(screens.dragon));
+
+document.querySelectorAll(".dragon-card").forEach(card => {
+    card.addEventListener("click", () => {
+        chooseDragon(card.dataset.dragon);
+    });
+});
+
+document.getElementById("up").addEventListener("click", () => moveShip(0, -5));
+document.getElementById("down").addEventListener("click", () => moveShip(0, 5));
+document.getElementById("left").addEventListener("click", () => moveShip(-5, 0));
+document.getElementById("right").addEventListener("click", () => moveShip(5, 0));
+
+document.addEventListener("keydown", event => {
+    if (!screens.game.classList.contains("active")) return;
+
+    if (event.key === "ArrowUp" || event.key.toLowerCase() === "w") {
+        moveShip(0, -5);
+    }
+
+    if (event.key === "ArrowDown" || event.key.toLowerCase() === "s") {
+        moveShip(0, 5);
+    }
+
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        moveShip(-5, 0);
+    }
+
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        moveShip(5, 0);
+    }
+});
+
+document.getElementById("exploreButton")
+    .addEventListener("click", explore);
+
+document.getElementById("treasureButton")
+    .addEventListener("click", treasure);
+
+document.getElementById("battleButton")
+    .addEventListener("click", startBattle);
+
+document.getElementById("attackButton")
+    .addEventListener("click", attack);
+
+document.getElementById("specialButton")
+    .addEventListener("click", specialAttack);
+
+document.getElementById("runButton")
+    .addEventListener("click", () => {
+        showScreen(screens.game);
+        logMessage("🏃 You escaped the battle!");
+    });
+
+updateShip();
+updateHealth();
+</script>
+
+</body>
+</html>
